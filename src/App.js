@@ -29,9 +29,7 @@ const PoseEstimationGame = () => {
     { name: "Paper", type: "recycle", image: "https://png.pngtree.com/png-clipart/20220720/original/pngtree-toilet-tissue-paper-roll-vector-illustration-png-image_8388391.png" },
     { name: "Fishbone", type: "wet", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR8Pc6CqNsOt25cGt3g3k8iIvHyIeX1RnpjFQ&s" },
     { name: "Candy Wrapper", type: "general", image: "https://t4.ftcdn.net/jpg/03/04/69/69/360_F_304696907_czmMiRwezOOmR4F3M4soUUfRSmiC7O2a.jpg" },
-    
   ];
-  
 
   const confidenceThreshold = 0.3;
 
@@ -54,16 +52,17 @@ const PoseEstimationGame = () => {
 
   const handleAnswer = (binType) => {
     if (binType === currentItem.type) {
-        setScore(prev => prev + 1);
-        // Only generate a new item without resetting the timer
-        const randomIndex = Math.floor(Math.random() * items.length);
-        const selected = items[randomIndex];
-        loadImage(selected.image);
-        setCurrentItem(selected);
+      setScore(prev => prev + 1);
+      // Only generate a new item without resetting the timer
+      const randomIndex = Math.floor(Math.random() * items.length);
+      const selected = items[randomIndex];
+      loadImage(selected.image);
+      setCurrentItem(selected);
     } else {
-        setScore(prev => Math.max(prev - 1, 0)); // Decrement score by 1 but don't let it go below 0
+      setScore(prev => Math.max(prev - 1, 0)); // Decrement score by 1 but don't let it go below 0
     }
-};
+  };
+
   const handleRestart = () => {
     setScore(0);
     initializeGame();
@@ -89,9 +88,9 @@ const PoseEstimationGame = () => {
       setStatus("Loading model...");
       await tf.ready();
       await tf.setBackend('webgl');
-      
+
       const model = poseDetection.SupportedModels.MoveNet;
-      const detectorConfig = { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING };
+      const detectorConfig = { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }; // Using MoveNet's SINGLEPOSE_LIGHTNING model
       const newDetector = await poseDetection.createDetector(model, detectorConfig);
       setDetector(newDetector);
       setStatus("Model loaded");
@@ -106,12 +105,12 @@ const PoseEstimationGame = () => {
       setStatus("Initializing video...");
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       videoRef.current.srcObject = stream;
-      
+
       videoRef.current.onloadedmetadata = () => {
         videoRef.current.play();
         setIsVideoReady(true);
         setStatus("Sort the waste!");
-        
+
         canvasRef.current.width = videoRef.current.videoWidth;
         canvasRef.current.height = videoRef.current.videoHeight;
       };
