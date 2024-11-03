@@ -88,7 +88,7 @@ const PoseEstimationGame = () => {
     const loadModel = async () => {
       setStatus("Loading model...");
       await tf.ready();
-      await tf.setBackend('webgl');
+      await tf.setBackend('cpu');
 
       const model = poseDetection.SupportedModels.MoveNet;
       const detectorConfig = { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }; // Using MoveNet's SINGLEPOSE_LIGHTNING model
