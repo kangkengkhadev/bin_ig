@@ -12,9 +12,9 @@ const PoseEstimationGame = () => {
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [currentItem, setCurrentItem] = useState(null);
-  const [timer, setTimer] = useState(15); // Timer state
+  const [timer, setTimer] = useState(15);
+  const [frameCount, setFrameCount] = useState(0); // Track frame count
 
-  // Define the bins (static buttons)
   const bins = [
     { type: "general", name: "General wet", color: "#4B5563", image: "https://hospitalitythailand.com/uploads/202206/6297137393a86.png" },
     { type: "recycle", name: "Recyclable", color: "#3B82F6", image: "https://mw.co.th/uploads/202206/62970a115dc8e.png" },
@@ -22,7 +22,6 @@ const PoseEstimationGame = () => {
     { type: "hazardous", name: "Hazardous", color: "#EF4444", image: "https://hospitalitythailand.com/uploads/202206/629708034e62a.png" }
   ];
 
-  // Items that can appear above player's head
   const items = [
     { name: "Plastic Bottle", type: "recycle", image: "https://img.lovepik.com/png/20230930/mineral-water-water-bottle-recover-drink_36069_wh860.png" },
     { name: "Banana Peel", type: "wet", image: "https://png.pngtree.com/png-clipart/20220108/ourmid/pngtree-banana-peel-decorative-pattern-illustration-png-image_4101651.png" },
@@ -39,7 +38,7 @@ const PoseEstimationGame = () => {
     const selected = items[randomIndex];
     setCurrentItem(selected);
     setGameOver(false);
-    setTimer(15); // Reset timer to 15 seconds
+    setTimer(15);
     loadImage(selected.image);
   };
 
@@ -54,13 +53,12 @@ const PoseEstimationGame = () => {
   const handleAnswer = (binType) => {
     if (binType === currentItem.type) {
       setScore(prev => prev + 1);
-      // Only generate a new item without resetting the timer
       const randomIndex = Math.floor(Math.random() * items.length);
       const selected = items[randomIndex];
       loadImage(selected.image);
       setCurrentItem(selected);
     } else {
-      setScore(prev => Math.max(prev - 1, 0)); // Decrement score by 1 but don't let it go below 0
+      setScore(prev => Math.max(prev - 1, 0));
     }
   };
 
@@ -77,7 +75,7 @@ const PoseEstimationGame = () => {
         setTimer(prev => prev - 1);
       }, 1000);
     } else if (timer === 0) {
-      setScore(prev => Math.max(prev - 1, 0)); // Decrement score by 1 when timer runs out
+      setScore(prev => Math.max(prev - 1, 0));
       setGameOver(true);
     }
     return () => clearInterval(timerInterval);
@@ -88,10 +86,10 @@ const PoseEstimationGame = () => {
     const loadModel = async () => {
       setStatus("Loading model...");
       await tf.ready();
-      await tf.setBackend('cpu');
+      await tf.setBackend('webgl');
 
       const model = poseDetection.SupportedModels.MoveNet;
-      const detectorConfig = { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }; // Using MoveNet's SINGLEPOSE_LIGHTNING model
+      const detectorConfig = { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING };
       const newDetector = await poseDetection.createDetector(model, detectorConfig);
       setDetector(newDetector);
       setStatus("Model loaded");
@@ -111,7 +109,6 @@ const PoseEstimationGame = () => {
         videoRef.current.play();
         setIsVideoReady(true);
         setStatus("Sort the waste!");
-
         canvasRef.current.width = videoRef.current.videoWidth;
         canvasRef.current.height = videoRef.current.videoHeight;
       };
@@ -167,11 +164,16 @@ const PoseEstimationGame = () => {
           if (video.videoWidth > 0 && video.videoHeight > 0) {
             const poses = await detector.estimatePoses(video);
             if (poses.length > 0) {
-              drawSkeleton(poses[0].keypoints);
+              // Only process every third frame for better performance
+              if (frameCount % 3 === 0) {
+                drawSkeleton(poses[0].keypoints);
+              }
+              setFrameCount(prev => prev + 1); // Increment frame count
             }
           }
           requestAnimationFrame(detectAndDraw);
         };
+
         detectAndDraw();
       };
       detectPose();
@@ -179,69 +181,27 @@ const PoseEstimationGame = () => {
   }, [detector, isVideoReady, currentItem]);
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      minHeight: '100vh',
-      backgroundColor: '#f0f2f5',
-      padding: '1rem'
-    }}>
-      {/* Score Display */}
-      <div style={{
-        position: 'fixed',
-        top: '1rem',
-        right: '1rem',
-        backgroundColor: '#ffffff',
-        padding: '0.5rem 1rem',
-        borderRadius: '2rem',
-        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
-        fontSize: '1.5rem'
-      }}>
-        Score: {score} | Time: {timer} seconds
+    <div className="game-container">
+      <h1 className="game-status">{status}</h1>
+      <div>
+        <h2>Score: {score}</h2>
+        <h2>Timer: {timer}</h2>
       </div>
-
-      {/* Video and Canvas */}
       <video ref={videoRef} style={{ display: 'none' }} />
       <canvas ref={canvasRef} />
-
-      {/* Current Item Display */}
-
-      {/* Bin Buttons */}
-      <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '2rem' }}>
-  {bins.map((bin) => (
-    <button
-      key={bin.type}
-      onClick={() => handleAnswer(bin.type)}
-      style={{
-        color: '#ffffff',
-        border: 'none',
-        borderRadius: '1rem',
-        padding: '1rem',
-        cursor: 'pointer',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center' // Center align items in the button
-      }}
-    >
-      <img src={bin.image} alt={bin.name} style={{ width: '70px', height: '70px', marginBottom: '0.5rem' }} />
-    </button>
-  ))}
-</div>
-
-      {/* Restart Button */}
-      {gameOver && (
-        <button onClick={handleRestart} style={{
-          marginTop: '2rem',
-          padding: '1rem 2rem',
-          border: 'none',
-          borderRadius: '1rem',
-          backgroundColor: '#3B82F6',
-          color: '#ffffff',
-          cursor: 'pointer'
-        }}>
-          Restart Game
-        </button>
+      {gameOver && <button onClick={handleRestart}>Restart</button>}
+      {currentItem && (
+        <div className="current-item">
+          <h2>Current Item: {currentItem.name}</h2>
+          <img src={currentItem.image} alt={currentItem.name} style={{ width: '150px' }} />
+          <div className="bins">
+            {bins.map(bin => (
+              <div key={bin.type} className="bin" onClick={() => handleAnswer(bin.type)} style={{ backgroundColor: bin.color }}>
+                {bin.name}
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
